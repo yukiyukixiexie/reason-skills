@@ -157,6 +157,100 @@
 
 ---
 
+### Step 9 — 输出修改后的 PDF（可选）
+
+用户确认修改方案后，自动生成修改后的 PDF。
+
+**技术路径**（已验证可用，无需额外安装）：
+```
+原始 .docx / .pdf / 粘贴文字
+    ↓ textutil 或 python-docx 提取内容
+修改后内容（应用 Step 3-7 建议）
+    ↓ 生成干净的 HTML 模板
+    ↓ Chrome headless 渲染
+简历_reviewed.pdf
+```
+
+#### 9.1 提取原始内容
+
+```bash
+# .docx 文件
+textutil -convert txt -stdout "简历.docx"
+
+# 或用 python-docx 逐段读取（保留结构）
+python3 -c "
+from docx import Document
+doc = Document('简历.docx')
+for para in doc.paragraphs:
+    print(para.text)
+"
+```
+
+#### 9.2 生成 HTML 模板
+
+根据分析结果，将修改后的内容填入以下 HTML 模板，保持专业简历排版：
+
+```html
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", Arial, sans-serif;
+    font-size: 10.5pt; color: #1a1a1a; background: #fff;
+    padding: 28px 36px; line-height: 1.55;
+  }
+  .name { font-size: 22pt; font-weight: 700; letter-spacing: 3px; text-align: center; margin-bottom: 6px; }
+  .contact { text-align: center; font-size: 9.5pt; color: #444; margin-bottom: 14px; }
+  .contact span { margin: 0 10px; }
+  .section-title {
+    font-size: 11pt; font-weight: 700; letter-spacing: 1px;
+    border-bottom: 1.5px solid #1a1a1a; padding-bottom: 2px; margin: 12px 0 7px 0;
+  }
+  .entry-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+  .entry-left { font-weight: 700; }
+  .entry-right { font-size: 9.5pt; color: #444; white-space: nowrap; margin-left: 10px; }
+  ul { padding-left: 16px; margin-bottom: 4px; }
+  li { margin-bottom: 2px; }
+  .entry { margin-bottom: 9px; }
+  .skills-label { font-weight: 600; }
+</style>
+</head>
+<body>
+  <!-- 按简历内容填充 -->
+</body>
+</html>
+```
+
+#### 9.3 Chrome headless 导出 PDF
+
+```bash
+"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" \
+  --headless=new \
+  --disable-gpu \
+  --print-to-pdf="简历_reviewed.pdf" \
+  --print-to-pdf-no-header \
+  --no-margins \
+  "file:///tmp/resume_reviewed.html"
+```
+
+#### 执行规则
+
+1. **先确认再生成**：展示行动清单后，询问"是否生成修改后的 PDF？"，用户确认后执行
+2. **输出路径**：默认保存在原文件同目录，文件名加 `_reviewed` 后缀
+3. **中文简历用中文模板**，英文简历用英文模板（调整字体和间距）
+4. **只改确认项**：未确认的修改不写入 HTML
+
+#### 环境要求
+
+- macOS + Google Chrome（已内置，无需安装）
+- `python-docx`：`pip3 install python-docx`（读取 .docx）
+- `textutil`：macOS 内置（读取 .docx 纯文字）
+
+---
+
 ## 注意事项
 
 - 分析时使用中文输出（除非简历是英文）
